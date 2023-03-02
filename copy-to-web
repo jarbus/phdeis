@@ -1,3 +1,0 @@
-#!/bin/bash
-
-scp papers.html tiara:.www/phdeis
