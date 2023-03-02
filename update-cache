@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+import os
+import requests
+from datetime import datetime
+import pandas as pd
+
+author_ids = ["2123438807", # tom
+    "1845875494", #jack
+    "1724714290", #jonne
+]
+
+CACHE_NAME = 'cache.csv'
+
+
+# load a csv containing past cached requests, if it exists, else make a new dataframe
+def load_cache():
+    try:
+        df = pd.read_csv(CACHE_NAME)
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=['paper_id', 'author_id','author_name','title','year','authors','date_accessed','link'])
+    return df
+
+def fetch_and_update_cache(df):
+    cached_paper_ids = set(df['paper_id'])
+
+
+    # Define endpoint and parameters
+    endpoint = "https://api.semanticscholar.org/graph/v1/author/{}/papers"
+    params = {
+        "limit": 10,
+        "fields": "title,year,authors",
+    }
+
+    # Loop over author IDs and fetch papers
+    for author_id in author_ids:
+        # Make API request
+        response = requests.get(endpoint.format(author_id), params=params)
+
+        # Extract paper data
+        papers = response.json().get("data", [])
+
+        # Print author name and latest papers
+        author_name = papers[0]["authors"][0]["name"] if len(papers) > 0 else "Unknown author"
+        for paper in papers:
+            id = paper["paperId"]
+            if id not in cached_paper_ids:
+                title = paper["title"]
+                year = paper["year"]
+                authors = ", ".join([author["name"] for author in paper["authors"]])
+
+                # get current date and time, without ms
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                print(f"new_paper by {author_name}: {id}")
+                df = pd.concat([df, pd.DataFrame({'paper_id': id, 'author_id': author_id, 'author_name': author_name, 'title': title, 'year': year, 'authors': authors, 'date_accessed': now, 'link': 'https://www.semanticscholar.org/paper/' + id}, index=[0])])
+
+    return df
+
+def save_cache(df):
+    df.to_csv(f'{CACHE_NAME}.tmp', index=False)
+    os.rename(f'{CACHE_NAME}.tmp', CACHE_NAME)
+
+
+def main():
+    df = load_cache()
+    df = fetch_and_update_cache(df)
+    save_cache(df)
+
+if __name__ == "__main__":
+    main()

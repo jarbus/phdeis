@@ -1,0 +1,41 @@
+#!/usr/bin/env python
+import csv
+from datetime import datetime
+from feedgen.feed import FeedGenerator
+
+# Save RSS feed to file
+rss_filename = "phdeis.xml"
+
+# Load CSV file
+csv_filename = "cache.csv"
+with open(csv_filename, "r", newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    rows = list(reader)
+
+# Generate RSS feed
+fg = FeedGenerator()
+fg.title("Brandeis Cosi PhD Student Papers")
+fg.link(href="https://www.cs.brandeis.edu/~garbus/phdeis.xml", rel="self")
+fg.description("A list of papers by Brandeis Cosi PhD students")
+
+for row in rows:
+    # Extract data from CSV row
+    author_id = row["author_id"]
+    title = row["title"]
+    year = row["year"]
+    authors = row["authors"]
+    date_accessed = datetime.strptime(row['date_accessed'], '%Y-%m-%d %H:%M:%S')
+    # add timezone info
+    date_accessed = date_accessed.replace(tzinfo=datetime.now().astimezone().tzinfo)
+    link = row["link"]
+
+    # Create feed item
+    fe = fg.add_entry()
+    fe.id(link)
+    fe.title(title)
+    fe.link(href=link)
+    fe.author(name=authors)
+    fe.published(date_accessed)
+    fe.description(f"Authors: {authors}<br>Year: {year}")
+
+fg.rss_file(rss_filename)
