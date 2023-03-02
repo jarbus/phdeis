@@ -7,6 +7,7 @@ import pandas as pd
 author_ids = ["2123438807", # tom
     "1845875494", #jack
     "1724714290", #jonne
+    "1414156453", # chester
 ]
 
 CACHE_NAME = 'cache.csv'
